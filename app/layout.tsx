@@ -8,8 +8,8 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'FontMin - 字体子集抽取工具',
-  description: '上传字体文件，输入所需文字，一键生成精简字体包',
+  title: 'FontMin - 字里行间',
+  description: '字体子集抽取工具',
   generator: 'v0.app',
   icons: {
     icon: [
