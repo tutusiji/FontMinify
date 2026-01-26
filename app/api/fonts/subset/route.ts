@@ -5,15 +5,22 @@ import path from "path";
 import Fontmin from "fontmin";
 import archiver from "archiver";
 import ttf2woff2 from "ttf2woff2";
+import { cookies } from "next/headers";
 
-const FONT_SOURCE_DIR = path.join(process.cwd(), "font-source");
-const FONT_MINI_DIR = path.join(process.cwd(), "font-mini");
+const FONT_TEMP_DIR = path.join(process.cwd(), "font-temp");
 
-// Ensure font-mini directory exists
-async function ensureMiniDir() {
-  if (!existsSync(FONT_MINI_DIR)) {
-    await mkdir(FONT_MINI_DIR, { recursive: true });
+// Get user's session directory
+function getUserSessionDir(sessionId: string): string {
+  return path.join(FONT_TEMP_DIR, sessionId);
+}
+
+// Ensure font-mini directory exists for user session
+async function ensureMiniDir(sessionId: string) {
+  const miniDir = path.join(getUserSessionDir(sessionId), "mini");
+  if (!existsSync(miniDir)) {
+    await mkdir(miniDir, { recursive: true });
   }
+  return miniDir;
 }
 
 // Check if font is TTF format (Fontmin only supports TTF input)
@@ -135,8 +142,16 @@ async function processFont(
 export async function POST(request: NextRequest) {
   console.log("[API] Font subset request received");
   try {
-    console.log("[API] Ensuring mini directory exists");
-    await ensureMiniDir();
+    // Get session ID from cookie
+    const cookieStore = await cookies()
+    const sessionId = cookieStore.get("font_session_id")?.value
+    
+    if (!sessionId) {
+      return NextResponse.json({ error: "会话未找到，请重新上传字体" }, { status: 404 })
+    }
+    
+    const userDir = getUserSessionDir(sessionId)
+    const miniDir = await ensureMiniDir(sessionId)
 
     console.log("[API] Parsing request body");
     const {
@@ -164,12 +179,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify font-source directory exists
-    if (!existsSync(FONT_SOURCE_DIR)) {
-      console.error("[API] font-source directory not found");
+    // Verify user's font directory exists
+    if (!existsSync(userDir)) {
+      console.error("[API] User font directory not found");
       return NextResponse.json(
-        { error: "字体源目录不存在" },
-        { status: 500 },
+        { error: "未找到上传的字体，请重新上传" },
+        { status: 404 },
       );
     }
 
@@ -191,7 +206,7 @@ export async function POST(request: NextRequest) {
 
     for (const fontName of fontNames) {
       console.log(`[API] Processing font: ${fontName}`);
-      const sourcePath = path.join(FONT_SOURCE_DIR, fontName);
+      const sourcePath = path.join(userDir, fontName);
 
       if (!existsSync(sourcePath)) {
         console.warn(`[API] Font not found: ${fontName}`);
@@ -226,7 +241,7 @@ export async function POST(request: NextRequest) {
           if (outputBuffer) {
             // Generate output filename with _Lite suffix
             const outputName = `${baseName}_Lite.${format}`;
-            const outputPath = path.join(FONT_MINI_DIR, outputName);
+            const outputPath = path.join(miniDir, outputName);
 
             await writeFile(outputPath, outputBuffer);
 
@@ -270,7 +285,7 @@ export async function POST(request: NextRequest) {
     // If downloadAll is true and we have multiple files, create a zip
     if (downloadAll && filesToZip.length > 0) {
       const zipName = `fonts_Lite_${Date.now()}.zip`;
-      const zipPath = path.join(FONT_MINI_DIR, zipName);
+      const zipPath = path.join(miniDir, zipName);
 
       // Create zip file
       await new Promise<void>((resolve, reject) => {

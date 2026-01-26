@@ -2,8 +2,9 @@ import { type NextRequest, NextResponse } from "next/server"
 import { readFile } from "fs/promises"
 import { existsSync } from "fs"
 import path from "path"
+import { cookies } from "next/headers"
 
-const FONT_SOURCE_DIR = path.join(process.cwd(), "font-source")
+const FONT_TEMP_DIR = path.join(process.cwd(), "font-temp")
 
 export async function GET(
   request: NextRequest,
@@ -12,7 +13,17 @@ export async function GET(
   try {
     const { filename } = await params
     const decodedFilename = decodeURIComponent(filename)
-    const filePath = path.join(FONT_SOURCE_DIR, decodedFilename)
+    
+    // Get session ID from cookie
+    const cookieStore = await cookies()
+    const sessionId = cookieStore.get("font_session_id")?.value
+    
+    if (!sessionId) {
+      return NextResponse.json({ error: "Session not found" }, { status: 404 })
+    }
+    
+    const userDir = path.join(FONT_TEMP_DIR, sessionId)
+    const filePath = path.join(userDir, decodedFilename)
 
     if (!existsSync(filePath)) {
       return NextResponse.json({ error: "Font not found" }, { status: 404 })
@@ -35,7 +46,7 @@ export async function GET(
     return new NextResponse(fontBuffer, {
       headers: {
         "Content-Type": contentType,
-        "Cache-Control": "public, max-age=31536000",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
         "Access-Control-Allow-Origin": "*",
       },
     })
