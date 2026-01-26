@@ -46,10 +46,19 @@ export async function GET(request: NextRequest) {
   try {
     const sessionId = await getSessionId(request)
     const userDir = await ensureUserDirectory(sessionId)
+    
+    // Ensure directory exists before reading
+    if (!existsSync(userDir)) {
+      console.log(`[GET] Creating user directory: ${userDir}`)
+      await mkdir(userDir, { recursive: true })
+    }
+    
     const files = await readdir(userDir)
     const fontFiles = files.filter((file) =>
       /\.(ttf|otf|woff|woff2|eot|svg)$/i.test(file)
     )
+    
+    console.log(`[GET] Session: ${sessionId}, Found ${fontFiles.length} fonts`)
 
     const fonts = fontFiles.map((file) => ({
       id: Buffer.from(file).toString("base64"),
@@ -59,12 +68,13 @@ export async function GET(request: NextRequest) {
 
     const response = NextResponse.json({ fonts })
     
-    // Set session cookie
+    // Set session cookie with proper settings for production
     const cookieStore = await cookies()
     cookieStore.set("font_session_id", sessionId, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      path: "/",
       maxAge: 60 * 60 * 24, // 24 hours
     })
 
@@ -83,6 +93,8 @@ export async function POST(request: NextRequest) {
     await ensureFontSourceDir()
     const formData = await request.formData()
     const files = formData.getAll("fonts") as File[]
+
+    console.log(`[POST] Session: ${sessionId}, Uploading ${files.length} files`)
 
     if (!files || files.length === 0) {
       return NextResponse.json(
@@ -121,14 +133,17 @@ export async function POST(request: NextRequest) {
       fonts: uploadedFonts,
     })
 
-    // Set session cookie
+    // Set session cookie with proper settings for production
     const cookieStore = await cookies()
     cookieStore.set("font_session_id", sessionId, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      path: "/",
       maxAge: 60 * 60 * 24, // 24 hours
     })
+    
+    console.log(`[POST] Session cookie set: ${sessionId}`)
 
     return response
   } catch (error) {
