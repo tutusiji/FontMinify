@@ -9,7 +9,18 @@ export function getSessionId(): string {
   // Module level variable is fine for that.
 
   if (!window.__FONT_SESSION_ID__) {
-    window.__FONT_SESSION_ID__ = crypto.randomUUID();
+    // Polyfill for crypto.randomUUID in insecure contexts (HTTP)
+    if (typeof crypto !== "undefined" && crypto.randomUUID) {
+      window.__FONT_SESSION_ID__ = crypto.randomUUID();
+    } else {
+      // Fallback implementation (RFC4122 version 4)
+      window.__FONT_SESSION_ID__ =
+        "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+          var r = (Math.random() * 16) | 0,
+            v = c == "x" ? r : (r & 0x3) | 0x8;
+          return v.toString(16);
+        });
+    }
   }
 
   return window.__FONT_SESSION_ID__;
