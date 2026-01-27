@@ -5,7 +5,6 @@ import path from "path";
 import Fontmin from "fontmin";
 import archiver from "archiver";
 import ttf2woff2 from "ttf2woff2";
-import { cookies } from "next/headers";
 
 const FONT_TEMP_DIR = path.join(process.cwd(), "font-temp");
 
@@ -38,7 +37,7 @@ async function processFont(
   return new Promise((resolve, reject) => {
     try {
       console.log(`[processFont] Starting: ${sourcePath}, format: ${format}`);
-      
+
       const fontmin = new Fontmin().src(sourcePath);
 
       // Extract glyphs for subset
@@ -85,17 +84,28 @@ async function processFont(
           for (const file of files) {
             const filePath = file.path || "";
             console.log(`[processFont] Checking file: ${filePath}`);
-            if (filePath.endsWith(".ttf")) {
+            if (filePath.toLowerCase().endsWith(".ttf")) {
               try {
                 const ttfBuffer = file.contents as Buffer;
-                console.log(`[processFont] Converting TTF to WOFF2, size: ${ttfBuffer.length}`);
+                console.log(
+                  `[processFont] Converting TTF to WOFF2, size: ${ttfBuffer.length}`,
+                );
                 const woff2Buffer = ttf2woff2(ttfBuffer);
-                console.log(`[processFont] WOFF2 conversion successful, size: ${woff2Buffer.length}`);
+                console.log(
+                  `[processFont] WOFF2 conversion successful, size: ${woff2Buffer.length}`,
+                );
                 resolve(Buffer.from(woff2Buffer));
                 return;
               } catch (conversionError) {
-                console.error("[processFont] Error converting TTF to WOFF2:", conversionError);
-                reject(new Error(`TTF 转 WOFF2 失败: ${conversionError instanceof Error ? conversionError.message : String(conversionError)}`));
+                console.error(
+                  "[processFont] Error converting TTF to WOFF2:",
+                  conversionError,
+                );
+                reject(
+                  new Error(
+                    `TTF 转 WOFF2 失败: ${conversionError instanceof Error ? conversionError.message : String(conversionError)}`,
+                  ),
+                );
                 return;
               }
             }
@@ -106,12 +116,16 @@ async function processFont(
         }
 
         // Find the correct output file by extension
-        const targetExt = `.${format}`;
+        const targetExt = `.${format}`.toLowerCase();
         for (const file of files) {
           const filePath = file.path || "";
-          console.log(`[processFont] Checking file for ${targetExt}: ${filePath}`);
-          if (filePath.endsWith(targetExt)) {
-            console.log(`[processFont] Found target file, size: ${(file.contents as Buffer).length}`);
+          console.log(
+            `[processFont] Checking file for ${targetExt}: ${filePath}`,
+          );
+          if (filePath.toLowerCase().endsWith(targetExt)) {
+            console.log(
+              `[processFont] Found target file, size: ${(file.contents as Buffer).length}`,
+            );
             resolve(file.contents as Buffer);
             return;
           }
@@ -121,20 +135,28 @@ async function processFont(
         if (format === "ttf") {
           for (const file of files) {
             const filePath = file.path || "";
-            if (filePath.endsWith(".ttf")) {
-              console.log(`[processFont] Found TTF file, size: ${(file.contents as Buffer).length}`);
+            if (filePath.toLowerCase().endsWith(".ttf")) {
+              console.log(
+                `[processFont] Found TTF file, size: ${(file.contents as Buffer).length}`,
+              );
               resolve(file.contents as Buffer);
               return;
             }
           }
         }
 
-        console.warn(`[processFont] No output file found for format: ${format}`);
+        console.warn(
+          `[processFont] No output file found for format: ${format}`,
+        );
         reject(new Error(`未找到 ${format} 格式的输出文件`));
       });
     } catch (error) {
       console.error("[processFont] Unexpected error:", error);
-      reject(new Error(`字体处理异常: ${error instanceof Error ? error.message : String(error)}`));
+      reject(
+        new Error(
+          `字体处理异常: ${error instanceof Error ? error.message : String(error)}`,
+        ),
+      );
     }
   });
 }
@@ -142,16 +164,18 @@ async function processFont(
 export async function POST(request: NextRequest) {
   console.log("[API] Font subset request received");
   try {
-    // Get session ID from cookie
-    const cookieStore = await cookies()
-    const sessionId = cookieStore.get("font_session_id")?.value
-    
+    // Get session ID from header
+    const sessionId = request.headers.get("x-font-session-id");
+
     if (!sessionId) {
-      return NextResponse.json({ error: "会话未找到，请重新上传字体" }, { status: 404 })
+      return NextResponse.json(
+        { error: "会话未找到，请重新上传字体" },
+        { status: 404 },
+      );
     }
-    
-    const userDir = getUserSessionDir(sessionId)
-    const miniDir = await ensureMiniDir(sessionId)
+
+    const userDir = getUserSessionDir(sessionId);
+    const miniDir = await ensureMiniDir(sessionId);
 
     console.log("[API] Parsing request body");
     const {
@@ -251,7 +275,7 @@ export async function POST(request: NextRequest) {
               format,
               originalSize,
               minifiedSize: outputBuffer.length,
-              downloadUrl: `/api/fonts/download/${encodeURIComponent(outputName)}`,
+              downloadUrl: `/api/fonts/download/${encodeURIComponent(outputName)}?sessionId=${sessionId}`,
             });
 
             if (downloadAll) {
@@ -279,7 +303,10 @@ export async function POST(request: NextRequest) {
       } else {
         errorMsg = "处理失败，请确保上传的是有效的 TTF 格式字体文件。";
       }
-      return NextResponse.json({ error: errorMsg, details: errors }, { status: 400 });
+      return NextResponse.json(
+        { error: errorMsg, details: errors },
+        { status: 400 },
+      );
     }
 
     // If downloadAll is true and we have multiple files, create a zip
@@ -308,7 +335,7 @@ export async function POST(request: NextRequest) {
         message: "字体处理成功",
         results,
         textLength: uniqueText.length,
-        zipDownload: `/api/fonts/download/${encodeURIComponent(zipName)}`,
+        zipDownload: `/api/fonts/download/${encodeURIComponent(zipName)}?sessionId=${sessionId}`,
         skippedFonts: skippedFonts.length > 0 ? skippedFonts : undefined,
         warnings: errors.length > 0 ? errors : undefined,
       });
@@ -326,7 +353,7 @@ export async function POST(request: NextRequest) {
     const errorMessage = error instanceof Error ? error.message : "未知错误";
     const errorStack = error instanceof Error ? error.stack : undefined;
     console.error("[API] Error stack:", errorStack);
-    
+
     return NextResponse.json(
       {
         error: `处理失败: ${errorMessage}`,
