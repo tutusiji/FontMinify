@@ -6,7 +6,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "FontMin - 字里行间",
   description: "字体子集抽取工具",
-  generator: "v0.app",
+  generator: "FontMin",
   icons: {
     icon: [
       {
