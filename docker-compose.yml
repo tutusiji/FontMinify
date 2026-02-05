@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  font-subsetting-tool:
+    image: font-subsetting-tool:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: font-subsetting-tool
+    ports:
+      - "6739:6739"
+    volumes:
+      # 持久化字体文件目录
+      - ./font-source:/app/font-source
+      - ./font-mini:/app/font-mini
+      - ./font-temp:/app/font-temp
+    environment:
+      - NODE_ENV=production
+      - PORT=6739
+      - HOSTNAME=0.0.0.0
+    restart: unless-stopped
+    networks:
+      - font-network
+
+networks:
+  font-network:
+    driver: bridge

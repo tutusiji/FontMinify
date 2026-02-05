@@ -1,0 +1,58 @@
+# 依赖目录
+node_modules
+.pnpm-store
+
+# Next.js 构建输出
+.next
+out
+
+# 开发和调试
+.qoder
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# 测试
+coverage
+.nyc_output
+
+# 环境变量
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# 文档
+README.md
+*.md
+!types/*.md
+
+# 部署脚本
+deploy.sh
+
+# 临时文件（保留目录但不复制内容）
+font-temp/*
+!font-temp/.gitkeep
+
+# 测试文件
+test-api.js
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts

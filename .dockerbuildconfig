@@ -1,0 +1,11 @@
+# Docker构建优化配置
+# 此文件提供构建时的环境变量和优化选项
+
+# 使用BuildKit加速构建
+DOCKER_BUILDKIT=1
+
+# 禁用构建缓存推送到远程仓库
+BUILDKIT_PROGRESS=plain
+
+# 并行构建层数
+DOCKER_BUILD_PARALLEL=4
