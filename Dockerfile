@@ -36,20 +36,13 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# 创建非 root 用户
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
-
 # 复制必要的文件
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
-# 创建字体目录并设置权限
-RUN mkdir -p font-source font-mini font-temp && \
-    chown -R nextjs:nodejs font-source font-mini font-temp
-
-USER nextjs
+# 创建字体目录
+RUN mkdir -p font-source font-mini font-temp
 
 EXPOSE 6739
 

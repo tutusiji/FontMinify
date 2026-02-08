@@ -7,19 +7,19 @@ import archiver from "archiver";
 import ttf2woff2 from "ttf2woff2";
 
 const FONT_TEMP_DIR = path.join(process.cwd(), "font-temp");
+const FONT_MINI_DIR = path.join(process.cwd(), "font-mini");
 
 // Get user's session directory
 function getUserSessionDir(sessionId: string): string {
   return path.join(FONT_TEMP_DIR, sessionId);
 }
 
-// Ensure font-mini directory exists for user session
-async function ensureMiniDir(sessionId: string) {
-  const miniDir = path.join(getUserSessionDir(sessionId), "mini");
-  if (!existsSync(miniDir)) {
-    await mkdir(miniDir, { recursive: true });
+// Ensure font-mini directory exists (global directory)
+async function ensureMiniDir() {
+  if (!existsSync(FONT_MINI_DIR)) {
+    await mkdir(FONT_MINI_DIR, { recursive: true });
   }
-  return miniDir;
+  return FONT_MINI_DIR;
 }
 
 // Check if font is TTF format (Fontmin only supports TTF input)
@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
     }
 
     const userDir = getUserSessionDir(sessionId);
-    const miniDir = await ensureMiniDir(sessionId);
+    const miniDir = await ensureMiniDir();
 
     console.log("[API] Parsing request body");
     const {
@@ -275,7 +275,7 @@ export async function POST(request: NextRequest) {
               format,
               originalSize,
               minifiedSize: outputBuffer.length,
-              downloadUrl: `/api/fonts/download/${encodeURIComponent(outputName)}?sessionId=${sessionId}`,
+              downloadUrl: `/api/fonts/download/${encodeURIComponent(outputName)}`,
             });
 
             if (downloadAll) {
@@ -335,7 +335,7 @@ export async function POST(request: NextRequest) {
         message: "字体处理成功",
         results,
         textLength: uniqueText.length,
-        zipDownload: `/api/fonts/download/${encodeURIComponent(zipName)}?sessionId=${sessionId}`,
+        zipDownload: `/api/fonts/download/${encodeURIComponent(zipName)}`,
         skippedFonts: skippedFonts.length > 0 ? skippedFonts : undefined,
         warnings: errors.length > 0 ? errors : undefined,
       });

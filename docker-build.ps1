@@ -50,6 +50,9 @@ if ($LASTEXITCODE -eq 0) {
         Write-Host "     -v ./font-temp:/app/font-temp \"
         Write-Host "     --name font-subsetting-tool \"
         Write-Host "     ${IMAGE_NAME}:${IMAGE_TAG}"
+        Write-Host ""
+        Write-Host "或使用 docker-compose:"
+        Write-Host "   docker-compose up -d"
     } else {
         Write-Host "[错误] 镜像导出失败" -ForegroundColor Red
         Read-Host "按回车键退出"

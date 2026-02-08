@@ -51,6 +51,9 @@ if [ $? -eq 0 ]; then
         echo "     -v ./font-temp:/app/font-temp \\"
         echo "     --name font-subsetting-tool \\"
         echo "     ${IMAGE_NAME}:${IMAGE_TAG}"
+        echo ""
+        echo "或使用 docker-compose:"
+        echo "   docker-compose up -d"
     else
         echo -e "${RED}[错误] 镜像导出失败${NC}"
         exit 1

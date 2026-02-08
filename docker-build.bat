@@ -55,6 +55,9 @@ echo      -v ./font-mini:/app/font-mini ^
 echo      -v ./font-temp:/app/font-temp ^
 echo      --name font-subsetting-tool ^
 echo      %IMAGE_NAME%:%IMAGE_TAG%
+echo.
+echo 或使用 docker-compose:
+echo    docker-compose up -d
 pause
 
 :end

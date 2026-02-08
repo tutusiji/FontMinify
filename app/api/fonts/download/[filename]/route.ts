@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { readFile } from "fs/promises";
 import { existsSync } from "fs";
 import path from "path";
-const FONT_TEMP_DIR = path.join(process.cwd(), "font-temp");
+const FONT_MINI_DIR = path.join(process.cwd(), "font-mini");
 
 export async function GET(
   request: NextRequest,
@@ -12,20 +12,12 @@ export async function GET(
     const { filename } = await params;
     const decodedFilename = decodeURIComponent(filename);
 
-    // Get session ID from query param or header
-    const url = new URL(request.url);
-    const sessionId =
-      url.searchParams.get("sessionId") ||
-      request.headers.get("x-font-session-id");
+    const filePath = path.join(FONT_MINI_DIR, decodedFilename);
 
-    if (!sessionId) {
-      return NextResponse.json({ error: "Session not found" }, { status: 404 });
-    }
-
-    const miniDir = path.join(FONT_TEMP_DIR, sessionId, "mini");
-    const filePath = path.join(miniDir, decodedFilename);
+    console.log(`[Download] Looking for: ${filePath}`);
 
     if (!existsSync(filePath)) {
+      console.error(`[Download] File not found: ${filePath}`);
       return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
 
